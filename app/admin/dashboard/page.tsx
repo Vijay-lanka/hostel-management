@@ -20,7 +20,7 @@ interface PaymentRow {
   profiles: {
     name: string;
     room_number: string;
-  };
+  }[];
 }
 
 export default function AdminDashboard() {
@@ -80,7 +80,18 @@ export default function AdminDashboard() {
 
       setTotalCollected(collected);
       setTotalPending(pending);
-      setPayments(paymentsData || []);
+
+      // ✅ Normalize data for TypeScript safety
+      const formattedPayments: PaymentRow[] =
+        paymentsData?.map((p: any) => ({
+          id: p.id,
+          amount: p.amount,
+          status: p.status,
+          payment_date: p.payment_date,
+          profiles: p.profiles ?? [],
+        })) || [];
+
+      setPayments(formattedPayments);
     };
 
     fetchStats();
@@ -142,27 +153,30 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {payments.map((p) => (
-                <tr key={p.id} className="border-t">
-                  <td className="p-3">{p.profiles?.name}</td>
-                  <td className="p-3">{p.profiles?.room_number || "-"}</td>
-                  <td className="p-3">₹{p.amount}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm ${
-                        p.status === "Paid"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-red-100 text-red-600"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    {new Date(p.payment_date).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
+              {payments.map((p) => {
+                const profile = p.profiles[0]; // ✅ safe
+                return (
+                  <tr key={p.id} className="border-t">
+                    <td className="p-3">{profile?.name || "-"}</td>
+                    <td className="p-3">{profile?.room_number || "-"}</td>
+                    <td className="p-3">₹{p.amount}</td>
+                    <td className="p-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm ${
+                          p.status === "Paid"
+                            ? "bg-green-100 text-green-600"
+                            : "bg-red-100 text-red-600"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      {new Date(p.payment_date).toLocaleDateString()}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
